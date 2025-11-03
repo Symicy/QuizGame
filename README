@@ -1,0 +1,2 @@
+Run frontend: npm run dev
+Run backend: .\mvnw spring-boot:run
