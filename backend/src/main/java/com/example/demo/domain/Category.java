@@ -2,7 +2,6 @@ package com.example.demo.domain;
 
 import java.time.LocalDateTime;
 
-import com.example.demo.enums.Role;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import jakarta.persistence.Column;
@@ -12,8 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,35 +22,28 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Table(name = "users")
-public class User {
+@Table(name = "categories")
+public class Category {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false, updatable = false, unique = true)
     private Long id;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+    @Column(name = "name", nullable = false, unique = true)
+    private String name;
 
-    @Column(name = "username", nullable = false)
-    private String username;
+    @Column(name = "description")
+    private String description;
 
-    @Column(name = "password", nullable = false)
-    private String password;
+    @Column(name = "icon")
+    private String icon;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "role", nullable = false)
-    private Role role = Role.PLAYER;
-
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
-        if (role == null) {
-            role = Role.PLAYER;
-        }
     }
 }

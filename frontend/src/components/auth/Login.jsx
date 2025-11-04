@@ -63,8 +63,7 @@ const Login = () => {
       navigate('/home'); 
     } catch (error) {
       setApiError(
-        error.response?.data?.message || 
-        'Credentiale invalide. Te rog încearcă din nou.'
+        error.message || 'Credentiale invalide. Te rog încearcă din nou.'
       );
     } finally {
       setLoading(false);

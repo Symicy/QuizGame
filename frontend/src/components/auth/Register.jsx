@@ -78,8 +78,7 @@ const Register = () => {
       navigate('/home');
     } catch (error) {
       setApiError(
-        error.response?.data?.message || 
-        'Înregistrarea a eșuat. Te rugăm să încerci din nou.'
+        error.message || 'Înregistrarea a eșuat. Te rugăm să încerci din nou.'
       );
     } finally {
       setLoading(false);

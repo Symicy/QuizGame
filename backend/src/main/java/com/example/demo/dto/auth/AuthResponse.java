@@ -1,6 +1,6 @@
 package com.example.demo.dto.auth;
 
-import com.example.demo.domain.Role;
+import com.example.demo.enums.Role;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

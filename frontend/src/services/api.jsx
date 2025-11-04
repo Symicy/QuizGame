@@ -22,4 +22,16 @@ api.interceptors.request.use(
   }
 );
 
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message = error.response?.data?.message ?? 'A apărut o eroare neașteptată';
+    const normalizedError = new Error(message);
+    normalizedError.status = error.response?.status;
+    normalizedError.data = error.response?.data;
+    normalizedError.originalError = error;
+    return Promise.reject(normalizedError);
+  }
+);
+
 export default api;

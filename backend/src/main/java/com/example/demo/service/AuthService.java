@@ -1,8 +1,10 @@
 package com.example.demo.service;
 
-import com.example.demo.domain.Role;
 import com.example.demo.domain.User;
 import com.example.demo.dto.auth.*;
+import com.example.demo.enums.Role;
+import com.example.demo.exception.InvalidCredentialsException;
+import com.example.demo.exception.UserAlreadyExistsException;
 import com.example.demo.repo.UserRepo;
 import com.example.demo.security.JwtUtils;
 
@@ -20,7 +22,7 @@ public class AuthService {
     
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalStateException("Email already exists");
+            throw new UserAlreadyExistsException("Email already exists");
         }
 
         User newUser = new User();
@@ -37,10 +39,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Invalid credentials"));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException("Invalid credentials");
         }
 
         String token = jwtUtils.generateToken(user.getEmail());
