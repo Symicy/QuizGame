@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -65,7 +66,7 @@ public class Quiz {
     @Column(name = "created_by", nullable = false)
     private User createdBy;
 
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
         name = "quiz_questions",
         joinColumns = @JoinColumn(name = "quiz_id"),
