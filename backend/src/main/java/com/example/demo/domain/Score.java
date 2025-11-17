@@ -51,7 +51,7 @@ public class Score {
     @Column(name = "difficulty")
     private DifficultyLevel difficulty;
 
-    @Column(name = "rank")
+    @Column(name = "score_rank")
     private Integer rank;
 
     @Column(name = "created_at", nullable = false, updatable = false)

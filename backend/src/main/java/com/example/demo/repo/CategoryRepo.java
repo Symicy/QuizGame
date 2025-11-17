@@ -3,11 +3,17 @@ package com.example.demo.repo;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
 import com.example.demo.domain.Category;
 
-public interface CategoryRepo {
+@Repository
+public interface CategoryRepo extends JpaRepository<Category, Long> {
 
-    Optional<List<Category>> findAll();
-    Optional<Category> findById(Long id);
-    Optional<Category> findByName(String name);
+    Optional<Category> findByNameIgnoreCase(String name);
+
+    boolean existsByNameIgnoreCase(String name);
+
+    List<Category> findByIsActiveTrueOrderByNameAsc();
 }

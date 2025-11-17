@@ -1,15 +1,23 @@
 package com.example.demo.repo;
 
-import java.util.Optional;
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.example.demo.domain.Quiz;
 import com.example.demo.enums.DifficultyLevel;
 
-public interface QuizRepo {
-    Optional<Quiz> findById(Long id);
-    Optional<Quiz> findByAll();
-    Optional<Quiz> findByCategoryId(Long categoryId);
-    Optional<Quiz> findByCreatedBy(Long userId);
-    Optional<Quiz> findByDifficultyLevel(DifficultyLevel difficultyLevel);
-    Optional<Quiz> findByCategoryAndDifficulty(Long categoryId, DifficultyLevel difficultyLevel);
+@Repository
+public interface QuizRepo extends JpaRepository<Quiz, Long> {
+
+    List<Quiz> findByIsActiveTrue();
+
+    List<Quiz> findByCategoryId(Long categoryId);
+
+    List<Quiz> findByDifficulty(DifficultyLevel difficulty);
+
+    List<Quiz> findByCategoryIdAndDifficulty(Long categoryId, DifficultyLevel difficulty);
+
+    List<Quiz> findByCreatedById(Long userId);
 }

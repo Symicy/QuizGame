@@ -9,12 +9,14 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OrderColumn;
@@ -49,8 +51,15 @@ public class Quiz {
     @Column(name = "total_questions", nullable = false)
     private Integer totalQuestions;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "difficulty_level", nullable = false)
     private DifficultyLevel difficulty;
+
+    @Column(name = "time_limit_seconds")
+    private Integer timeLimitSeconds;
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -58,12 +67,12 @@ public class Quiz {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    @ManyToOne
-    @Column(name = "category_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-    @ManyToOne
-    @Column(name = "created_by", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -75,15 +84,18 @@ public class Quiz {
     @OrderColumn(name = "order_index")
     private List<Question> questions = new ArrayList<>();
 
-    @PreUpdate
-    private void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
     @PrePersist
     private void prePersist() {
         LocalDateTime now = LocalDateTime.now();
         this.createdAt = now;
         this.updatedAt = now;
+        if (isActive == null) {
+            isActive = true;
+        }
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
