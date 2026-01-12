@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.example.demo.domain.Room;
 import com.example.demo.enums.RoomStatus;
+import com.example.demo.enums.RoomType;
 
 @Repository
 public interface RoomRepo extends JpaRepository<Room, Long> {
@@ -19,4 +20,6 @@ public interface RoomRepo extends JpaRepository<Room, Long> {
     List<Room> findByStatus(RoomStatus status);
 
     List<Room> findByOwnerId(Long ownerId);
+
+    Optional<Room> findFirstByRoomTypeOrderByIdAsc(RoomType roomType);
 }

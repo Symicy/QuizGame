@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.room.RoomCreateRequest;
+import com.example.demo.dto.room.RoomInviteRequest;
 import com.example.demo.dto.room.RoomPlayerRequest;
 import com.example.demo.dto.room.RoomReadyRequest;
 import com.example.demo.dto.room.RoomResponse;
@@ -68,5 +69,11 @@ public class RoomController {
     @PostMapping("/{code}/finish")
     public ResponseEntity<RoomResponse> finishRoom(@PathVariable String code, @Valid @RequestBody RoomPlayerRequest request) {
         return ResponseEntity.ok(roomService.finishRoom(code, request));
+    }
+
+    @PostMapping("/{code}/invite")
+    public ResponseEntity<Void> invitePlayer(@PathVariable String code, @Valid @RequestBody RoomInviteRequest request) {
+        roomService.invitePlayer(code, request);
+        return ResponseEntity.accepted().build();
     }
 }

@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.demo.domain.Category;
 import com.example.demo.domain.Question;
 import com.example.demo.domain.Quiz;
+import com.example.demo.domain.Room;
 import com.example.demo.domain.Session;
 import com.example.demo.domain.Submission;
 import com.example.demo.domain.User;
@@ -23,6 +24,7 @@ import com.example.demo.dto.session.SubmissionResponse;
 import com.example.demo.enums.DifficultyLevel;
 import com.example.demo.enums.SessionStatus;
 import com.example.demo.enums.SessionType;
+import com.example.demo.enums.RoomType;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repo.CategoryRepo;
 import com.example.demo.repo.QuestionRepo;
@@ -105,6 +107,7 @@ public class SessionService {
         submission.setPointsEarned(pointsEarned);
         submission.setResponseTimeMs(request.getResponseTimeMs());
         submissionRepo.save(submission);
+        submissionRepo.flush();
 
         session.setFinalScore((session.getFinalScore() != null ? session.getFinalScore() : 0) + pointsEarned);
         if (correct) {
@@ -117,6 +120,7 @@ public class SessionService {
         }
 
         sessionRepo.save(session);
+        sessionRepo.flush();
 
         return SubmissionResponse.builder()
                 .sessionId(session.getId())
@@ -144,6 +148,35 @@ public class SessionService {
         return sessions.stream()
                 .map(session -> SessionResponse.fromEntity(session, submissionRepo.findBySessionId(session.getId())))
                 .toList();
+    }
+
+    public Session createRoomSession(Room room, User user) {
+        if (room == null) {
+            throw new IllegalArgumentException("Room is required");
+        }
+        if (user == null) {
+            throw new IllegalArgumentException("User is required");
+        }
+        List<Question> questions = room.getQuestions();
+        if (questions == null || questions.isEmpty()) {
+            throw new IllegalStateException("Room does not have questions configured");
+        }
+
+        Session session = new Session();
+        SessionType type = RoomType.DUEL.equals(room.getRoomType()) ? SessionType.DUEL : SessionType.LOBBY;
+        session.setSessionType(type);
+        session.setStatus(SessionStatus.IN_PROGRESS);
+        session.setUser(user);
+        session.setRoom(room);
+        session.setQuiz(room.getQuiz());
+        session.setCategory(room.getCategory());
+        session.setDifficulty(room.getDifficulty());
+        session.setQuestions(new ArrayList<>(questions));
+        session.setTotalQuestions(questions.size());
+        session.setFinalScore(0);
+        session.setCorrectAnswers(0);
+        session.setDurationSeconds(0);
+        return sessionRepo.save(session);
     }
 
     private void completeSessionInternal(Session session) {

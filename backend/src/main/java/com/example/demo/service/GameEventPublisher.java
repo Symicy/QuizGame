@@ -42,7 +42,22 @@ public class GameEventPublisher {
         messagingTemplate.convertAndSend(topicForRoom(roomCode), Objects.requireNonNull(event));
     }
 
+    public <T> void publishUserEvent(Long userId, String eventType, T payload) {
+        if (userId == null) {
+            return;
+        }
+        GameEventPayload<T> event = GameEventPayload.<T>builder()
+                .type(eventType)
+                .payload(payload)
+                .build();
+        messagingTemplate.convertAndSend(topicForUser(userId), Objects.requireNonNull(event));
+    }
+
     private @NonNull String topicForRoom(String roomCode) {
         return "/topic/rooms/" + Objects.requireNonNull(roomCode, "roomCode");
+    }
+
+    private @NonNull String topicForUser(Long userId) {
+        return "/topic/users/" + Objects.requireNonNull(userId, "userId");
     }
 }

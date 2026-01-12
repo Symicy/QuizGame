@@ -2,9 +2,12 @@ package com.example.demo.service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.UUID;
 
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +21,7 @@ import com.example.demo.domain.Room;
 import com.example.demo.domain.RoomParticipant;
 import com.example.demo.domain.User;
 import com.example.demo.dto.room.RoomCreateRequest;
+import com.example.demo.dto.room.RoomInviteRequest;
 import com.example.demo.dto.room.RoomPlayerRequest;
 import com.example.demo.dto.room.RoomReadyRequest;
 import com.example.demo.dto.room.RoomResponse;
@@ -31,6 +35,7 @@ import com.example.demo.repo.QuizRepo;
 import com.example.demo.repo.RoomParticipantRepo;
 import com.example.demo.repo.RoomRepo;
 import com.example.demo.repo.UserRepo;
+import com.example.demo.dto.duel.DuelInvitePayload;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,6 +55,8 @@ public class RoomService {
     private final CategoryRepo categoryRepo;
     private final QuestionRepo questionRepo;
     private final GameEventPublisher eventPublisher;
+    private final DuelService duelService;
+    private final PresenceService presenceService;
 
     public RoomResponse createRoom(RoomCreateRequest request) {
         User owner = getUser(request.getOwnerId());
@@ -122,13 +129,30 @@ public class RoomService {
         Room room = getRoomOrThrow(code);
         RoomParticipant participant = participantRepo.findByRoomIdAndUserId(room.getId(), request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("User is not part of this room"));
+        boolean duelRoom = RoomType.DUEL.equals(room.getRoomType());
+        boolean duelWaitingRoom = duelRoom && RoomStatus.WAITING.equals(room.getStatus());
+
         participant.leave();
-        participantRepo.save(participant);
+        if (duelWaitingRoom) {
+            participantRepo.delete(participant);
+        } else {
+            participantRepo.save(participant);
+        }
 
         syncPlayerCount(room);
+        if (duelRoom) {
+            duelService.handlePlayerLeave(room, participant);
+        }
         if (room.getCurrentPlayers() <= 0) {
-            room.setStatus(RoomStatus.FINISHED);
-            room.setClosedAt(LocalDateTime.now());
+            if (RoomType.LOBBY.equals(room.getRoomType())) {
+                room.setStatus(RoomStatus.WAITING);
+                room.setClosedAt(null);
+                room.setRoundStartedAt(null);
+                room.setCurrentQuestionIndex(0);
+            } else if (!RoomType.DUEL.equals(room.getRoomType())) {
+                room.setStatus(RoomStatus.FINISHED);
+                room.setClosedAt(LocalDateTime.now());
+            }
         }
         return buildAndPublish(room);
     }
@@ -145,7 +169,7 @@ public class RoomService {
     public RoomResponse startRoom(String code, RoomPlayerRequest request) {
         Room room = getRoomOrThrow(code);
         ensureOwner(room, request.getUserId());
-        if (!RoomStatus.WAITING.equals(room.getStatus())) {
+        if (RoomStatus.IN_PROGRESS.equals(room.getStatus())) {
             throw new IllegalStateException("Room already started");
         }
         List<RoomParticipant> activeParticipants = participantRepo.findByRoomIdAndIsActiveTrue(room.getId());
@@ -159,6 +183,9 @@ public class RoomService {
         room.setStatus(RoomStatus.IN_PROGRESS);
         room.setCurrentQuestionIndex(0);
         room.setRoundStartedAt(LocalDateTime.now());
+        if (RoomType.DUEL.equals(room.getRoomType())) {
+            duelService.handleRoomStarted(room, activeParticipants);
+        }
         roomRepo.save(room);
         return buildAndPublish(room);
     }
@@ -166,10 +193,55 @@ public class RoomService {
     public RoomResponse finishRoom(String code, RoomPlayerRequest request) {
         Room room = getRoomOrThrow(code);
         ensureOwner(room, request.getUserId());
-        room.setStatus(RoomStatus.FINISHED);
-        room.setClosedAt(LocalDateTime.now());
-        roomRepo.save(room);
+        if (RoomType.DUEL.equals(room.getRoomType())) {
+            duelService.forceFinish(room);
+            room = getRoomOrThrow(code);
+        } else {
+            room.setStatus(RoomStatus.FINISHED);
+            room.setClosedAt(LocalDateTime.now());
+            roomRepo.save(room);
+        }
         return buildAndPublish(room);
+    }
+
+    public void invitePlayer(String code, RoomInviteRequest request) {
+        Room room = getRoomOrThrow(code);
+        if (!RoomType.DUEL.equals(room.getRoomType())) {
+            throw new IllegalStateException("Invites are available only for duel rooms");
+        }
+        if (!RoomStatus.WAITING.equals(room.getStatus())) {
+            throw new IllegalStateException("You can only invite players before the duel starts");
+        }
+        if (room.isFull()) {
+            throw new IllegalStateException("Room already has the maximum number of players");
+        }
+
+        User inviter = getUser(request.getInviterId());
+        ensureInvitePermission(room, inviter.getId());
+
+        User target = getUser(request.getTargetUserId());
+        if (Objects.equals(inviter.getId(), target.getId())) {
+            throw new IllegalArgumentException("You cannot invite yourself");
+        }
+        boolean alreadyParticipant = participantRepo.findByRoomIdAndUserId(room.getId(), target.getId()).isPresent();
+        if (alreadyParticipant) {
+            throw new IllegalStateException("Player is already part of this room");
+        }
+        if (!presenceService.isUserOnline(target.getId())) {
+            throw new IllegalStateException("Player is no longer online");
+        }
+
+        DuelInvitePayload payload = DuelInvitePayload.builder()
+                .inviteId(UUID.randomUUID().toString())
+                .roomCode(room.getCode())
+                .inviterId(inviter.getId())
+                .inviterUsername(inviter.getUsername())
+                .questionCount(room.getQuestionCount())
+                .timePerQuestion(room.getTimePerQuestion())
+                .difficulty(room.getDifficulty())
+                .sentAt(Instant.now())
+                .build();
+        eventPublisher.publishUserEvent(target.getId(), "DUEL_INVITE", payload);
     }
 
     private RoomResponse buildAndPublish(Room room) {
@@ -180,6 +252,12 @@ public class RoomService {
     }
 
     private void ensureRoomJoinable(Room room) {
+        if (RoomType.LOBBY.equals(room.getRoomType())) {
+            if (room.isFull()) {
+                throw new IllegalStateException("Room is already full");
+            }
+            return;
+        }
         if (!RoomStatus.WAITING.equals(room.getStatus())) {
             throw new IllegalStateException("Room is not joinable");
         }
@@ -194,8 +272,24 @@ public class RoomService {
         }
     }
 
+    private void ensureInvitePermission(Room room, Long userId) {
+        boolean isOwner = room.getOwner() != null && room.getOwner().getId().equals(userId);
+        if (isOwner) {
+            return;
+        }
+        boolean isActiveParticipant = participantRepo.findByRoomIdAndUserId(room.getId(), userId)
+                .map(participant -> Boolean.TRUE.equals(participant.getIsActive()))
+                .orElse(false);
+        if (!isActiveParticipant) {
+            throw new IllegalArgumentException("Only active players can invite others");
+        }
+    }
+
     private void syncPlayerCount(Room room) {
-        long activePlayers = participantRepo.countByRoomIdAndIsActiveTrue(room.getId());
+        participantRepo.flush();
+        long activePlayers = participantRepo.findByRoomId(room.getId()).stream()
+                .filter(participant -> Boolean.TRUE.equals(participant.getIsActive()))
+                .count();
         room.setCurrentPlayers(Math.toIntExact(activePlayers));
         roomRepo.save(room);
     }

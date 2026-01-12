@@ -7,6 +7,12 @@ import HomePage from './components/HomePage';
 import AdminDashboard from './components/admin/AdminDashboard';
 import QuestionList from './components/admin/QuestionList';
 import QuestionDetails from './components/admin/QuestionDetails';
+import SoloSessionStart from './components/play/SoloSessionStart';
+import PlaySession from './components/play/PlaySession';
+import LobbyRoom from './components/play/LobbyRoom';
+import DuelRoom from './components/play/DuelRoom';
+import LeaderboardPage from './components/leaderboard/LeaderboardPage';
+import AppLayout from './components/layout/AppLayout';
 
 
 const PrivateRoute = ({ children, requiredRoles }) => {
@@ -20,7 +26,7 @@ const PrivateRoute = ({ children, requiredRoles }) => {
     return <Navigate to="/home" replace />;
   }
 
-  return children;
+  return <AppLayout>{children}</AppLayout>;
 };
 
 function App() {
@@ -37,6 +43,46 @@ function App() {
                 <HomePage />
               </PrivateRoute>
             } 
+          />
+          <Route
+            path="/play/solo"
+            element={
+              <PrivateRoute>
+                <SoloSessionStart />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/play/lobby"
+            element={
+              <PrivateRoute>
+                <LobbyRoom />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/play/duel"
+            element={
+              <PrivateRoute>
+                <DuelRoom />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/leaderboard"
+            element={
+              <PrivateRoute>
+                <LeaderboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/play/solo/:sessionId"
+            element={
+              <PrivateRoute>
+                <PlaySession />
+              </PrivateRoute>
+            }
           />
           <Route
             path="/admin"

@@ -19,7 +19,7 @@ public class RoomCreateRequest {
 
     @NotNull(message = "Max players is required")
     @Min(value = 2, message = "Room must allow at least 2 players")
-    @Max(value = 10, message = "Room cannot exceed 10 players")
+    @Max(value = 50, message = "Room cannot exceed 50 players")
     private Integer maxPlayers;
 
     @NotNull(message = "Question count is required")

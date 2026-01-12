@@ -48,7 +48,10 @@ public class SessionResponse {
 
         List<SessionQuestionResponse> questionResponses = session.getQuestions() != null
                 ? session.getQuestions().stream()
-                        .map(question -> SessionQuestionResponse.fromEntity(question, submissionByQuestion.containsKey(question.getId())))
+                        .map(question -> SessionQuestionResponse.fromEntity(
+                                question,
+                                submissionByQuestion.get(question.getId()),
+                                session.getStatus()))
                         .toList()
                 : List.of();
 

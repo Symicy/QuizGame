@@ -1,5 +1,7 @@
 import api from './api';
 
+const getStoredToken = () => localStorage.getItem('token');
+
 const authService = {
   register: async (userData) => {
     const response = await api.post('/auth/register', userData);
@@ -30,8 +32,10 @@ const authService = {
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!getStoredToken();
   },
+  getToken: getStoredToken,
 };
 
 export default authService;
+export const getToken = getStoredToken;

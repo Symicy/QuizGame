@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import com.example.demo.domain.Score;
 import com.example.demo.enums.DifficultyLevel;
+import com.example.demo.repo.projection.UserScoreAggregate;
 
 import lombok.Builder;
 import lombok.Data;
@@ -26,6 +27,7 @@ public class LeaderboardEntryResponse {
     private String quizTitle;
     private Long categoryId;
     private String categoryName;
+    private Integer totalSessions;
 
     public static LeaderboardEntryResponse fromEntity(Score score) {
         return fromEntity(score, null);
@@ -51,5 +53,26 @@ public class LeaderboardEntryResponse {
                 .categoryId(score.getCategory() != null ? score.getCategory().getId() : null)
                 .categoryName(score.getCategory() != null ? score.getCategory().getName() : null)
                 .build();
+    }
+
+    public static LeaderboardEntryResponse fromAggregate(UserScoreAggregate aggregate, Integer rankOverride) {
+        if (aggregate == null) {
+            return null;
+        }
+        return LeaderboardEntryResponse.builder()
+                .userId(aggregate.getUserId())
+                .username(aggregate.getUsername())
+                .totalPoints(toInt(aggregate.getTotalPoints()))
+                .correctAnswers(toInt(aggregate.getTotalCorrectAnswers()))
+                .totalQuestions(toInt(aggregate.getTotalQuestions()))
+                .accuracy(aggregate.getAverageAccuracy())
+                .rank(rankOverride)
+                .createdAt(aggregate.getLastPlayedAt())
+                .totalSessions(toInt(aggregate.getTotalSessions()))
+                .build();
+    }
+
+    private static Integer toInt(Long value) {
+        return value != null ? Math.toIntExact(value) : null;
     }
 }

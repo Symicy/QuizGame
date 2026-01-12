@@ -3,6 +3,7 @@ package com.example.demo.service;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import com.example.demo.dto.leaderboard.PlayerStatsResponse;
 import com.example.demo.exception.ResourceNotFoundException;
 import com.example.demo.repo.ScoreRepo;
 import com.example.demo.repo.UserRepo;
+import com.example.demo.repo.projection.UserScoreAggregate;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,12 +28,13 @@ public class LeaderboardService {
     private final UserRepo userRepo;
 
     public LeaderboardResponse getLeaderboard(Long categoryId, Long quizId) {
-        List<LeaderboardEntryResponse> global = mapWithRank(scoreRepo.findTop10ByOrderByTotalPointsDesc());
+        List<LeaderboardEntryResponse> global = mapAggregatesWithRank(
+                scoreRepo.findTopUsersByTotalPoints(PageRequest.of(0, 10)));
         List<LeaderboardEntryResponse> category = categoryId != null
-                ? mapWithRank(scoreRepo.findTop10ByCategoryIdOrderByTotalPointsDesc(categoryId))
+                ? mapScoresWithRank(scoreRepo.findTop10ByCategoryIdOrderByTotalPointsDesc(categoryId))
                 : List.of();
         List<LeaderboardEntryResponse> quiz = quizId != null
-                ? mapWithRank(scoreRepo.findTop10ByQuizIdOrderByTotalPointsDesc(quizId))
+                ? mapScoresWithRank(scoreRepo.findTop10ByQuizIdOrderByTotalPointsDesc(quizId))
                 : List.of();
 
         return LeaderboardResponse.builder()
@@ -67,14 +70,21 @@ public class LeaderboardService {
                 .bestScore(bestScore)
                 .averageScore(averageScore)
                 .lastPlayedAt(scores.get(0).getCreatedAt())
-                .recentScores(mapWithRank(scores.stream().limit(5).toList()))
+                                .recentScores(mapScoresWithRank(scores.stream().limit(5).toList()))
                 .build();
     }
 
-    private List<LeaderboardEntryResponse> mapWithRank(List<Score> scores) {
+        private List<LeaderboardEntryResponse> mapScoresWithRank(List<Score> scores) {
         AtomicInteger counter = new AtomicInteger(1);
         return scores.stream()
                 .map(score -> LeaderboardEntryResponse.fromEntity(score, counter.getAndIncrement()))
                 .toList();
     }
+
+        private List<LeaderboardEntryResponse> mapAggregatesWithRank(List<UserScoreAggregate> aggregates) {
+                AtomicInteger counter = new AtomicInteger(1);
+                return aggregates.stream()
+                                .map(entry -> LeaderboardEntryResponse.fromAggregate(entry, counter.getAndIncrement()))
+                                .toList();
+        }
 }
