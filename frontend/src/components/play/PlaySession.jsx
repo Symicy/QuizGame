@@ -294,6 +294,21 @@ const PlaySession = () => {
               {submissionResult.correct ? 'Răspuns corect!' : 'Răspuns greșit.'} Ai acumulat {submissionResult.pointsEarned || 0} puncte.
             </div>
           )}
+
+          {isCompleted ? (
+            <div className="alert alert-info mt-4" role="alert">
+              <strong>Felicitări!</strong> Ai terminat sesiunea cu {session.finalScore || 0} puncte și {session.correctAnswers || 0} răspunsuri corecte din {totalQuestions} întrebări.
+              <div className="mt-2">
+                <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => navigate('/home')}>
+                  Înapoi la home
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="alert alert-secondary mt-4" role="alert">
+              Răspunde la toate întrebările pentru a salva scorul. Poți părăsi pagina în siguranță după completarea lor.
+            </div>
+          )}
         </div>
 
         <div className="col-12 col-lg-4">
@@ -336,21 +351,6 @@ const PlaySession = () => {
           </div>
         </div>
       </div>
-
-      {isCompleted ? (
-        <div className="alert alert-info mt-4" role="alert">
-          <strong>Felicitări!</strong> Ai terminat sesiunea cu {session.finalScore || 0} puncte și {session.correctAnswers || 0} răspunsuri corecte din {totalQuestions} întrebări.
-          <div className="mt-2">
-            <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => navigate('/home')}>
-              Înapoi la home
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="alert alert-secondary mt-4" role="alert">
-          Răspunde la toate întrebările pentru a salva scorul. Poți părăsi pagina în siguranță după completarea lor.
-        </div>
-      )}
 
       {showReviewSection && (
         <div className="card shadow-sm border-0 mt-4">
